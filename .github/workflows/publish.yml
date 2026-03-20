@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write
+      id-token: write # This is the OIDC permission required for passwordless publishing
 
     steps:
       - name: Checkout Code
@@ -30,5 +30,4 @@ jobs:
 
       - name: Publish to npm
         run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        # NOTE: NODE_AUTH_TOKEN has been intentionally removed here so npm falls back to OIDC
