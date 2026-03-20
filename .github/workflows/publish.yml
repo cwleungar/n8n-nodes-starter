@@ -28,9 +28,6 @@ jobs:
       - name: Build Node
         run: npm run build
 
-      - name: Inject Authentication Token
-        run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
-
       - name: Publish to npm
         run: npm publish --provenance --access public
         env:
