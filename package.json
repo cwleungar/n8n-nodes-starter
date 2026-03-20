@@ -1,6 +1,6 @@
 {
 	"name": "n8n-nodes-nanobanana-samlcw",
-	"version": "0.1.14",
+	"version": "0.1.15",
 	"description": "n8n nodes for nanobanana",
 	"license": "MIT",
 	"homepage": "",
@@ -27,13 +27,12 @@
 		"dist"
 	],
 	"n8n": {
-			"n8nNodesApiVersion": 1,
-			"credentials": [],
-			"nodes": [
+		"n8nNodesApiVersion": 1,
+		"credentials": [],
+		"nodes": [
 			"dist/nodes/Nanobanana/Nanobanana.node.js"
-			]
-		}
-		,
+		]
+	},
 	"devDependencies": {
 		"@n8n/node-cli": "*",
 		"eslint": "9.39.4",
