@@ -1,19 +1,19 @@
 {
-	"name": "n8n-nodes-<...>",
+	"name": "n8n-nodes-nanobanana-samlcw",
 	"version": "0.1.0",
-	"description": "",
+	"description": "n8n nodes for nanobanana",
 	"license": "MIT",
 	"homepage": "",
 	"keywords": [
 		"n8n-community-node-package"
 	],
 	"author": {
-		"name": "",
-		"email": ""
+		"name": "samlcw",
+		"email": "cwleungar@connect.ust.hk"
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/<...>/n8n-nodes-<...>.git"
+		"url": ""
 	},
 	"scripts": {
 		"build": "n8n-node build",
