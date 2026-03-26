@@ -1,6 +1,6 @@
 {
 	"name": "n8n-nodes-nanobanana-samlcw",
-	"version": "0.1.16",
+	"version": "0.1.17",
 	"description": "n8n nodes for nanobanana",
 	"license": "MIT",
 	"homepage": "",
@@ -27,20 +27,16 @@
 		"dist"
 	],
 	"n8n": {
-  "n8nNodesApiVersion": 1,
-  "credentials": [
-    "dist/credentials/VertexAiServiceAccountApi.credentials.js"
-	
-  ],
-  "nodes": [
-    "dist/nodes/GcsUploader/GcsUploader.node.js",
-    "dist/nodes/GeminiMediaTool/GeminiMediaToolVertex.node.js",
-    "dist/nodes/Nanobanana/Nanobanana.node.js"
-  ]
-}
-
-,
-
+		"n8nNodesApiVersion": 1,
+		"credentials": [
+			"dist/credentials/VertexAiServiceAccountApi.credentials.js"
+		],
+		"nodes": [
+			"dist/nodes/GcsUploader/GcsUploader.node.js",
+			"dist/nodes/GeminiMediaTool/GeminiMediaToolVertex.node.js",
+			"dist/nodes/Nanobanana/Nanobanana.node.js"
+		]
+	},
 	"devDependencies": {
 		"@n8n/node-cli": "*",
 		"eslint": "9.39.4",
