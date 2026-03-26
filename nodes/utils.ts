@@ -4,7 +4,7 @@ import * as crypto from 'crypto';
 export async function getVertexAccessToken(
 	ctx: IExecuteFunctions,
 ): Promise<{ accessToken: string }> {
-	const creds = await ctx.getCredentials('vertexAiServiceAccount');
+	const creds = await ctx.getCredentials('vertexAiServiceAccountApi');
 	
 	// Decode base64 credential field
 	const saJsonString = Buffer.from(creds.serviceAccountJsonB64 as string, 'base64').toString('utf-8');
