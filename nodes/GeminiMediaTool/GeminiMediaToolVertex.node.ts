@@ -22,7 +22,7 @@ interface VertexError {
 	}>;
 }
 
-export class GeminiMediaTool implements INodeType {
+export class GeminiMediaToolVertex implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'Gemini Media Tool (Vertex AI)',
 		name: 'geminiMediaToolVertex',
