@@ -12,11 +12,12 @@ export class VertexAiServiceAccountApi implements ICredentialType {
 	documentationUrl = 'https://cloud.google.com/vertex-ai/docs/authentication';
 	test: ICredentialTestRequest = {
 		request: {
-			baseURL: 'https://oauth2.googleapis.com',
-			url: '/token',
-			method: 'POST',
+			baseURL: 'https://www.googleapis.com',
+			url: '/discovery/v1/apis', // Public Google discovery endpoint
+			method: 'GET',
 		},
 	};
+
 	icon= 'file:vertexAiServiceAccountApi.svg' as Icon;
 	properties: INodeProperties[] = [
 		{
