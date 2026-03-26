@@ -27,17 +27,20 @@
 		"dist"
 	],
 	"n8n": {
-		"n8nNodesApiVersion": 1,
-		"credentials": [
-			"dist/credentials/VertexAiServiceAccount.credentials.js"
-		],
-		"nodes": [
-			"dist/nodes/Nanobanana/Nanobanana.node.js",
-			      "dist/nodes/GcsUploader/GcsUploader.node.js",
-				  "dist/nodes/GeminiMediaTool/GeminiMediaTool.node.js"
+  "n8nNodesApiVersion": 1,
+  "credentials": [
+    "dist/credentials/VertexAiServiceAccountApi.credentials.js"
+	
+  ],
+  "nodes": [
+    "dist/nodes/GcsUploader/GcsUploader.node.js",
+    "dist/nodes/GeminiMediaTool/GeminiMediaToolVertex.node.js",
+    "dist/nodes/Nanobanana/Nanobanana.node.js"
+  ]
+}
 
-		]
-	},
+,
+
 	"devDependencies": {
 		"@n8n/node-cli": "*",
 		"eslint": "9.39.4",

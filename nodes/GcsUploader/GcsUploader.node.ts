@@ -12,7 +12,7 @@ import { getVertexAccessToken } from '../utils';
 export class GcsUploader implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'Files To GCP Storage',
-		name: 'GcsUploader',
+		name: 'gcsUploader',
 		icon: 'file:gcsUploader.svg',
 		group: ['transform'],
 		version: 1,
@@ -25,7 +25,7 @@ export class GcsUploader implements INodeType {
 		outputs: ['main'],
 		credentials: [
 			{
-				name: 'vertexAiServiceAccount',
+				name: 'vertexAiServiceAccountApi',
 				required: true,
 			},
 		],
@@ -73,7 +73,7 @@ export class GcsUploader implements INodeType {
 				const filesArray =
 					typeof filesInput === 'string' ? JSON.parse(filesInput) : filesInput;
 				if (!Array.isArray(filesArray)) {
-					throw new Error("Error: 'filesJson' should be a valid JSON array of file objects.");
+					throw new NodeOperationError(this.getNode(), "Error: 'filesJson' should be a valid JSON array of file objects.");
 				}
 
 				// 1. Get access token from shared helper (uses vertexAiServiceAccount credential)
@@ -140,9 +140,8 @@ export class GcsUploader implements INodeType {
 						)) as GcsResponse;
 
 						if (uploadResponse.error) {
-							throw new Error(
-								`GCS Upload Error: ${uploadResponse.error.code} - ${uploadResponse.error.message}`,
-							);
+						
+							throw new NodeOperationError(this.getNode(), `GCS Upload Error: ${uploadResponse.error.code} - ${uploadResponse.error.message}`);
 						}
 
 						// Make public

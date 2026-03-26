@@ -38,7 +38,7 @@ export class GeminiMediaTool implements INodeType {
 		outputs: ['main'],
 		credentials: [
 			{
-				name: 'vertexAiServiceAccount',
+				name: 'vertexAiServiceAccountApi',
 				required: true,
 			},
 		],
@@ -49,7 +49,7 @@ export class GeminiMediaTool implements INodeType {
 				type: 'string',
 				default: '',
 				required: true,
-				description: 'GCP project ID used for Vertex AI.',
+				description: 'GCP project ID used for Vertex AI',
 			},
 			{
 				displayName: 'Location',
@@ -57,7 +57,7 @@ export class GeminiMediaTool implements INodeType {
 				type: 'string',
 				default: 'us-central1',
 				required: true,
-				description: 'Vertex AI region, for example "us-central1".',
+				description: 'Vertex AI region, for example "us-central1"',
 			},
 			{
 				displayName: 'Model ID',
@@ -65,7 +65,7 @@ export class GeminiMediaTool implements INodeType {
 				type: 'string',
 				default: 'gemini-1.5-pro-002',
 				required: true,
-				description: 'Vertex AI Gemini model ID, e.g. "gemini-1.5-pro-002".',
+				description: 'Vertex AI Gemini model ID, e.g. "gemini-1.5-pro-002"',
 			},
 			{
 				displayName: 'User Prompt',
@@ -76,7 +76,7 @@ export class GeminiMediaTool implements INodeType {
 				},
 				default: '',
 				required: true,
-				description: 'The text prompt that will be sent to Gemini.',
+				description: 'The text prompt that will be sent to Gemini',
 			},
 			{
 				displayName: 'Media File Links (JSON Array)',
@@ -116,7 +116,7 @@ export class GeminiMediaTool implements INodeType {
 						: mediaInput;
 
 				if (!Array.isArray(mediaArray)) {
-					throw new Error('Media File Links must be a valid JSON array.');
+					throw new NodeOperationError(this.getNode(), 'Media File Links must be a valid JSON array.');
 				}
 
 				// Validate each file link
@@ -124,12 +124,12 @@ export class GeminiMediaTool implements INodeType {
 				for (const fileObj of mediaArray) {
 					const { fileUri, mimeType } = fileObj;
 					if (!fileUri || !mimeType) {
-						throw new Error(
+						throw new NodeOperationError(this.getNode(), 
 							'Each media object must contain "fileUri" (gs:// format) and "mimeType" fields.',
 						);
 					}
 					// if (!fileUri.startsWith('gs://')) {
-					// 	throw new Error(`fileUri must be GCS format (gs://...). Got: ${fileUri}`);
+					// 	throw new NodeOperationError(this.getNode(), `fileUri must be GCS format (gs://...). Got: ${fileUri}`);
 					// }
 					mediaParts.push({
 						fileData: {
@@ -165,7 +165,7 @@ export class GeminiMediaTool implements INodeType {
 				const vertexResp = (await this.helpers.httpRequest(vertexOptions)) as VertexError;
 
 				if (vertexResp.error) {
-					throw new Error(
+					throw new NodeOperationError(this.getNode(), 
 						`Vertex AI Error: ${vertexResp.error.status} - ${vertexResp.error.message}`,
 					);
 				}

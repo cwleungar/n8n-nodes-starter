@@ -42,7 +42,7 @@ export class Nanobanana implements INodeType {
 		outputs: ['main'],
 		credentials: [
 			{
-				name: 'vertexAiServiceAccount', // must match credential class `name`
+				name: 'vertexAiServiceAccountApi', // must match credential class `name`
 				required: true,
 			},
 		],
@@ -130,11 +130,8 @@ export class Nanobanana implements INodeType {
 				)) as VertexResponse;
 
 				if (vertexResponse.error) {
-					throw new Error(
-						`Vertex AI API Error: ${vertexResponse.error.status} - ${vertexResponse.error.message}. Payload sent: ${JSON.stringify(
-							payloadContents,
-						)}`,
-					);
+					throw new NodeOperationError(this.getNode(), `Vertex AI API Error: ${vertexResponse.error.status} - ${vertexResponse.error.message}. Payload sent: ${JSON.stringify(payloadContents)}`);
+					
 				}
 
 				const parts = vertexResponse.candidates[0].content.parts;

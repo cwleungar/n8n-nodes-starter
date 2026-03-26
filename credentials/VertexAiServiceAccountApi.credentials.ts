@@ -1,13 +1,23 @@
 import {
+	ICredentialTestRequest,
 	ICredentialType,
 	INodeProperties,
+	Icon
 } from 'n8n-workflow';
 
-export class VertexAiServiceAccount implements ICredentialType {
-	name = 'vertexAiServiceAccount';
-	displayName = 'Vertex AI Service Account';
-	documentationUrl = '';
 
+export class VertexAiServiceAccountApi implements ICredentialType {
+	name = 'vertexAiServiceAccountApi';
+	displayName = 'Vertex AI Service Account API';
+	documentationUrl = 'https://cloud.google.com/vertex-ai/docs/authentication';
+	test: ICredentialTestRequest = {
+		request: {
+			baseURL: 'https://oauth2.googleapis.com',
+			url: '/token',
+			method: 'POST',
+		},
+	};
+	icon= 'file:vertexAiServiceAccountApi.svg' as Icon;
 	properties: INodeProperties[] = [
 		{
 			displayName: 'Service Account JSON (Base64)',
