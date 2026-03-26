@@ -7,6 +7,24 @@ import {
 	IHttpRequestOptions,
 } from 'n8n-workflow';
 import * as crypto from 'crypto';
+import { getVertexAccessToken } from '../utils';
+
+interface VertexResponse {
+	error?: {
+		message: string;
+		status: string;
+	};
+	candidates: Array<{
+		content: {
+			parts: Array<{
+				inlineData: {
+					data: string;
+					mimeType?: string;
+				};
+			}>;
+		};
+	}>;
+}
 
 export class Nanobanana implements INodeType {
 	description: INodeTypeDescription = {
@@ -22,16 +40,13 @@ export class Nanobanana implements INodeType {
 		},
 		inputs: ['main'],
 		outputs: ['main'],
-		properties: [
+		credentials: [
 			{
-				displayName: 'Service Account JSON (Base64)',
-				name: 'serviceAcB64',
-				type: 'string',
-				typeOptions: { password: true },
-				default: '',
+				name: 'vertexAiServiceAccount', // must match credential class `name`
 				required: true,
-				description: 'Base64 encoded Google Cloud Service Account JSON',
 			},
+		],
+		properties: [
 			{
 				displayName: 'Project ID',
 				name: 'projectId',
@@ -66,7 +81,8 @@ export class Nanobanana implements INodeType {
 				name: 'bucketName',
 				type: 'string',
 				default: '',
-				description: 'Optional. If provided, the generated image will be uploaded to this bucket.',
+				description:
+					'Optional. If provided, the generated image will be uploaded to this bucket.',
 			},
 		],
 	};
@@ -77,84 +93,61 @@ export class Nanobanana implements INodeType {
 
 		for (let i = 0; i < items.length; i++) {
 			try {
-				const serviceAcB64 = this.getNodeParameter('serviceAcB64', i) as string;
 				const projectId = this.getNodeParameter('projectId', i) as string;
 				const location = this.getNodeParameter('location', i) as string;
 				const modelId = this.getNodeParameter('modelId', i) as string;
-				const contentsJson = this.getNodeParameter('contents', i) as string | Record<string, unknown>;
+				const contentsJson = this.getNodeParameter('contents', i) as
+					| string
+					| Record<string, unknown>;
 				const bucketName = this.getNodeParameter('bucketName', i) as string;
 
-				// 1. Decode credentials
-				const saJsonString = Buffer.from(serviceAcB64, 'base64').toString('utf-8');
-				const credentials = JSON.parse(saJsonString) as { client_email: string; private_key: string };
+				// 1. Get access token from shared helper using n8n credentials
+				const { accessToken } = await getVertexAccessToken(this);
 
-				// 2. Generate Native JWT for Google OAuth2
-				const now = Math.floor(Date.now() / 1000);
-				const headerObj = { alg: 'RS256', typ: 'JWT' };
-				const claimObj = {
-					iss: credentials.client_email,
-					scope: 'https://www.googleapis.com/auth/cloud-platform',
-					aud: 'https://oauth2.googleapis.com/token',
-					exp: now + 3600,
-					iat: now,
-				};
-
-				const base64url = (obj: Record<string, unknown>) => Buffer.from(JSON.stringify(obj)).toString('base64url');
-				const signatureInput = `${base64url(headerObj)}.${base64url(claimObj)}`;
-				
-				const sign = crypto.createSign('RSA-SHA256');
-				sign.update(signatureInput);
-				const signature = sign.sign(credentials.private_key, 'base64url');
-				const jwt = `${signatureInput}.${signature}`;
-
-				// 3. Get Google Access Token using n8n's httpRequest helper
-				const tokenOptions: IHttpRequestOptions = {
-					method: 'POST',
-					url: 'https://oauth2.googleapis.com/token',
-					headers: {
-						'Content-Type': 'application/x-www-form-urlencoded',
-					},
-					body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`,
-				};
-				const tokenResponse = (await this.helpers.httpRequest(tokenOptions)) as { access_token: string };
-				const accessToken = tokenResponse.access_token;
-
-				// 4. Call Vertex AI API
+				// 2. Call Vertex AI API
 				const vertexUrl = `https://aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/publishers/google/models/${modelId}:generateContent`;
+
+				const payloadContents =
+					typeof contentsJson === 'string'
+						? JSON.parse(contentsJson)
+						: contentsJson;
+
 				const vertexOptions: IHttpRequestOptions = {
 					method: 'POST',
 					url: vertexUrl,
 					headers: {
-						'Authorization': `Bearer ${accessToken}`,
+						Authorization: `Bearer ${accessToken}`,
 						'Content-Type': 'application/json',
 					},
 					body: {
-						contents: typeof contentsJson === 'string' ? JSON.parse(contentsJson) : contentsJson,
+						contents: payloadContents,
 					},
+					ignoreHttpStatusErrors: true,
 				};
-				
-				interface VertexResponse {
-					candidates: Array<{
-						content: {
-							parts: Array<{
-								inlineData: {
-									data: string;
-									mimeType?: string;
-								};
-							}>;
-						};
-					}>;
+
+				const vertexResponse = (await this.helpers.httpRequest(
+					vertexOptions,
+				)) as VertexResponse;
+
+				if (vertexResponse.error) {
+					throw new Error(
+						`Vertex AI API Error: ${vertexResponse.error.status} - ${vertexResponse.error.message}. Payload sent: ${JSON.stringify(
+							payloadContents,
+						)}`,
+					);
 				}
-				const vertexResponse = (await this.helpers.httpRequest(vertexOptions)) as VertexResponse;
 
 				const parts = vertexResponse.candidates[0].content.parts;
 				const inline = parts[parts.length - 1].inlineData;
 				const imageB64 = inline.data;
 				const mimeType = inline.mimeType || 'image/png';
 
-				// 5. Decode Image
+				// 3. Decode image
 				const imageBuffer = Buffer.from(imageB64, 'base64');
-				const imageHash = crypto.createHash('sha256').update(imageBuffer).digest('hex');
+				const imageHash = crypto
+					.createHash('sha256')
+					.update(imageBuffer)
+					.digest('hex');
 				const ext = mimeType === 'image/jpeg' ? 'jpg' : 'png';
 				const filename = `${imageHash}.${ext}`;
 				const gcsPath = `nanobanana-image/${filename}`;
@@ -162,66 +155,76 @@ export class Nanobanana implements INodeType {
 				let publicUrl = '';
 				let fileId = '';
 
-				// 6. Upload to GCS using REST API
+				// 4. Upload to GCS (optional)
 				if (bucketName) {
-					// Upload binary payload
-					const uploadUrl = `https://storage.googleapis.com/upload/storage/v1/b/${bucketName}/o?uploadType=media&name=${encodeURIComponent(gcsPath)}`;
+					const uploadUrl = `https://storage.googleapis.com/upload/storage/v1/b/${bucketName}/o?uploadType=media&name=${encodeURIComponent(
+						gcsPath,
+					)}`;
 					const uploadOptions: IHttpRequestOptions = {
 						method: 'POST',
 						url: uploadUrl,
 						headers: {
-							'Authorization': `Bearer ${accessToken}`,
+							Authorization: `Bearer ${accessToken}`,
 							'Content-Type': mimeType,
 						},
 						body: imageBuffer,
 					};
 					await this.helpers.httpRequest(uploadOptions);
 
-					// Make object publicly readable
-					const aclUrl = `https://storage.googleapis.com/storage/v1/b/${bucketName}/o/${encodeURIComponent(gcsPath)}/acl`;
+					const aclUrl = `https://storage.googleapis.com/storage/v1/b/${bucketName}/o/${encodeURIComponent(
+						gcsPath,
+					)}/acl`;
 					const aclOptions: IHttpRequestOptions = {
 						method: 'POST',
 						url: aclUrl,
 						headers: {
-							'Authorization': `Bearer ${accessToken}`,
+							Authorization: `Bearer ${accessToken}`,
 							'Content-Type': 'application/json',
 						},
 						body: {
 							entity: 'allUsers',
 							role: 'READER',
 						},
+						ignoreHttpStatusErrors: true,
+						timeout: 180000, //3min
+						// In case of uniform bucket-level access, ACLs are disabled and this request will fail. We can ignore that error.
 					};
 					try {
 						await this.helpers.httpRequest(aclOptions);
 					} catch {
-						// Ignored if Bucket Level Access policy strictly overrides object ACLs
+						// ignore ACL errors for uniform bucket-level access
 					}
-					
+
 					publicUrl = `https://storage.googleapis.com/${bucketName}/${gcsPath}`;
 					fileId = gcsPath;
 				}
 
-				// 7. Format n8n Output Data
-				const binaryData = await this.helpers.prepareBinaryData(imageBuffer, filename, mimeType);
-				
+				// 5. Output
+				const binaryData = await this.helpers.prepareBinaryData(
+					imageBuffer,
+					filename,
+					mimeType,
+				);
+
 				returnData.push({
 					json: {
 						file_id: fileId,
 						uri: publicUrl,
-						mimeType: mimeType,
+						mimeType,
 						success: true,
 					},
 					binary: {
 						data: binaryData,
 					},
 				});
-
 			} catch (error) {
 				if (this.continueOnFail()) {
-					returnData.push({ json: { error: error.message } });
+					returnData.push({ json: { error: (error as Error).message } });
 					continue;
 				}
-				throw new NodeOperationError(this.getNode(), error, { itemIndex: i });
+				throw new NodeOperationError(this.getNode(), error as Error, {
+					itemIndex: i,
+				});
 			}
 		}
 

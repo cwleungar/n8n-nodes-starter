@@ -28,9 +28,14 @@
 	],
 	"n8n": {
 		"n8nNodesApiVersion": 1,
-		"credentials": [],
+		"credentials": [
+			"dist/credentials/VertexAiServiceAccount.credentials.js"
+		],
 		"nodes": [
-			"dist/nodes/Nanobanana/Nanobanana.node.js"
+			"dist/nodes/Nanobanana/Nanobanana.node.js",
+			      "dist/nodes/GcsUploader/GcsUploader.node.js",
+				  "dist/nodes/GeminiMediaTool/GeminiMediaTool.node.js"
+
 		]
 	},
 	"devDependencies": {
