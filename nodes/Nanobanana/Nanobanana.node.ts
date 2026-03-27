@@ -207,12 +207,13 @@ export class Nanobanana implements INodeType {
 					json: {
 						file_id: fileId,
 						uri: publicUrl,
+						b64: 'data:image/png;base64,' + imageB64,
 						mimeType,
 						success: true,
 					},
 					binary: {
 						data: binaryData,
-					},
+					},	
 				});
 			} catch (error) {
 				if (this.continueOnFail()) {
